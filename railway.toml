@@ -1,0 +1,19 @@
+[railway]
+language = "python"
+# Railway 使用 Nixpacks 自动构建
+# rootDirectory 已在 Railway 后台设置为 backend/
+
+[deploy]
+region = "us-west1"
+numReplicas = 1
+
+[deploy.healthbeatPath]
+path = "/"
+interval = 30
+
+[settings]
+persistentDirectories = ["/app/data"]
+
+[env]
+PYTHONUNBUFFERED = "1"
+PORT = "8000"
