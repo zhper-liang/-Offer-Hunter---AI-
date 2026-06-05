@@ -50,11 +50,11 @@ class LangGraphAgent:
         # 创建 LLM 模型
         self._model = provider._model
 
-        # 创建状态图
-        self._graph = self._create_graph()
-
         # 创建检查点保存器
         self._checkpointer = MemorySaver()
+
+        # 创建状态图
+        self._graph = self._create_graph()
 
     def _create_graph(self) -> StateGraph:
         """创建 LangGraph 状态图"""

@@ -35,6 +35,14 @@ class LangChainProvider(LLMProvider):
                 max_tokens=kwargs.get("max_tokens", 4096),
             )
         else:
+            # custom provider 根据 api_format 选择模型类
+            if provider_name == "custom" and kwargs.get("api_format") == "claude":
+                return ChatAnthropic(
+                    model=kwargs.get("model", "claude-3-5-sonnet-20241022"),
+                    anthropic_api_key=kwargs.get("api_key"),
+                    anthropic_api_url=kwargs.get("base_url"),
+                    max_tokens=kwargs.get("max_tokens", 4096),
+                )
             # 对于国内 provider（DeepSeek, 智谱, Moonshot 等），使用 ChatOpenAI + base_url
             return ChatOpenAI(
                 model=kwargs.get("model", "default"),

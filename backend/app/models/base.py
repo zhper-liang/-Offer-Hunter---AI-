@@ -105,7 +105,7 @@ def get_llm_provider(provider_name: Optional[str] = None) -> LLMProvider:
     elif name == "custom":
         if not settings.custom_base_url or not settings.custom_api_key:
             raise ValueError("自定义提供商需要设置 CUSTOM_BASE_URL 和 CUSTOM_API_KEY")
-        return get_langchain_provider("custom", api_key=settings.custom_api_key, base_url=settings.custom_base_url, model=settings.custom_model or "custom-model")
+        return get_langchain_provider("custom", api_key=settings.custom_api_key, base_url=settings.custom_base_url, model=settings.custom_model or "custom-model", api_format=settings.custom_api_format)
     else:
         supported = "claude, openai, ollama, deepseek, zhipu, moonshot, dashscope, yi, siliconflow, custom"
         raise ValueError(f"不支持的 LLM 提供商: {name} (支持: {supported})")
