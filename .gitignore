@@ -17,6 +17,7 @@ venv/
 # Data (local storage)
 backend/data/chroma_db/
 backend/data/uploads/
+backend/data/settings.json
 
 # IDE
 .vscode/
@@ -39,6 +40,17 @@ htmlcov/
 
 # Logs
 *.log
+
+# AI Tools (local development only)
+.agents/
+.claude/
+.codegraph/
+.codex/
+.understand-anything/
+.git.offer-hunter-empty-backup/
+
+# Plans (internal)
+plans/
 
 # Skill / References (不上传到项目仓库)
 SKILL.md
