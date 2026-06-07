@@ -15,5 +15,5 @@ async def delete_doc(doc_id: str) -> None:
     await remove_document(doc_id)
 
 
-def list_docs() -> list[dict]:
-    return list_all_documents()
+async def list_docs() -> list[dict]:
+    return await list_all_documents()

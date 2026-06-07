@@ -9,7 +9,8 @@ router = APIRouter()
 
 @router.get("/health")
 async def health_check():
+    kb_count = await get_collection_count()
     return {
         "status": "healthy",
-        "kb_documents": get_collection_count(),
+        "kb_documents": kb_count,
     }

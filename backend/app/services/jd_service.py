@@ -176,7 +176,7 @@ async def _search_knowledge_base(query: str, n: int = 5) -> list[str]:
     """从知识库检索相关内容"""
     embedder = _get_embedding_provider()
     embedding = await embedder.embed(query)
-    results = query_documents(query_embedding=embedding, n_results=n)
+    results = await query_documents(query_embedding=embedding, n_results=n)
     docs = results.get("documents", [[]])[0]
     return docs
 

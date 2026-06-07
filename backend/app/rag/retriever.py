@@ -1,10 +1,31 @@
-"""检索器 - 查询嵌入 → 向量搜索 → 过滤 → 上下文组装"""
+"""检索器 - 查询嵌入 → 向量搜索 → 过滤 → Reranking → 上下文组装"""
 
+import asyncio
+import logging
 from dataclasses import dataclass
 from typing import Optional
 
 from app.models.base import get_embedding_provider
 from app.rag.store import query_documents
+
+logger = logging.getLogger(__name__)
+
+# Reranker 全局实例（延迟加载）
+_reranker = None
+
+
+def _get_reranker():
+    """延迟加载 BGE Reranker"""
+    global _reranker
+    if _reranker is None:
+        try:
+            from sentence_transformers import CrossEncoder
+            _reranker = CrossEncoder("BAAI/bge-reranker-v2-m3", max_length=512)
+            logger.info("Reranker (BAAI/bge-reranker-v2-m3) 加载成功")
+        except Exception as e:
+            logger.warning(f"Reranker 加载失败，将使用向量分数排序: {e}")
+            _reranker = False  # 标记为不可用，避免重复尝试
+    return _reranker if _reranker is not False else None
 
 
 @dataclass
@@ -26,7 +47,9 @@ async def retrieve(
     1. 查询文本 → 嵌入向量
     2. ChromaDB 向量搜索
     3. 相关性分数过滤
-    4. 去重 + 排序
+    4. 去重
+    5. Reranking (如果可用)
+    6. 返回 top_k
     """
     # 1. 查询嵌入
     embedding_provider = get_embedding_provider()
@@ -34,7 +57,7 @@ async def retrieve(
 
     # 2. 向量搜索
     where = {"doc_type": doc_type} if doc_type else None
-    raw = query_documents(query_embedding, n_results=top_k * 2, where=where)
+    raw = await query_documents(query_embedding, n_results=top_k * 2, where=where)
 
     # 3. 解析结果
     results = []
@@ -57,7 +80,20 @@ async def retrieve(
             seen.add(key)
             deduped.append(r)
 
-    # 5. 按相关性排序, 取 top_k
+    # 5. Reranking（如果 reranker 可用，用交叉编码器重排）
+    reranker = _get_reranker()
+    if reranker and len(deduped) > 1:
+        try:
+            pairs = [(query, r.text) for r in deduped]
+            scores = await asyncio.to_thread(reranker.predict, pairs)
+            for r, rerank_score in zip(deduped, scores):
+                # 归一化到 0~1 并与向量分数加权融合
+                normalized = float(rerank_score)
+                r.score = 0.4 * r.score + 0.6 * normalized
+        except Exception as e:
+            logger.warning(f"Reranking 失败，使用原始排序: {e}")
+
+    # 6. 排序 + 取 top_k
     deduped.sort(key=lambda x: x.score, reverse=True)
     return deduped[:top_k]
 

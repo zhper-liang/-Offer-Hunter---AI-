@@ -1,4 +1,4 @@
-"""LangGraph 简历 Agent - 创建、编辑、导出简历"""
+"""LangGraph 简历 Agent - 创建、编辑、导出简历（支持 SubagentRunner 并行工具调用）"""
 
 from typing import Optional
 
@@ -33,10 +33,16 @@ RESUME_SYSTEM_PROMPT = """你是一位专业的简历顾问和写作专家。你
 - 根据目标职位定制内容，突出相关技能和经验
 - 简洁有力，避免空泛描述
 
+并行工具调用优化：
+- 当需要同时检索多个不同方面的信息时（如"工作经历"和"项目经历"），请一次发出多个 tool_calls 并行执行
+- 例如：同时调用 search_knowledge_base(query="工作经历") 和 search_knowledge_base(query="项目经历")
+- 同时需要联网搜索和知识库检索时，也可以并行调用 web_search 和 search_knowledge_base
+- 这样可以显著提高响应速度
+
 工作流程：
 1. 理解用户需求（目标职位、简历风格等）
-2. 使用 search_knowledge_base 检索相关的个人经历
-3. 需要时用 web_search 查询目标岗位的最新要求和关键词
+2. 并行使用 search_knowledge_base 检索相关的多个方面（工作经历、项目、技能等）
+3. 需要时用 web_search 查询目标岗位的最新要求和关键词（可与步骤2并行）
 4. 在内部组织好各段落的结构化数据
 5. 调用 format_resume 输出完整的结构化简历
 

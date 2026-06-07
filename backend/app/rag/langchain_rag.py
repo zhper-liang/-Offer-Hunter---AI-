@@ -2,6 +2,7 @@
 使用 LangChain 的 Chroma 集成替代自定义实现。
 """
 
+import asyncio
 from typing import Optional
 
 from langchain_chroma import Chroma
@@ -31,12 +32,10 @@ class LangChainRAG:
 
                 def embed_documents(self, texts: list[str]) -> list[list[float]]:
                     """嵌入多个文档"""
-                    import asyncio
                     return asyncio.run(self._provider.embed_batch(texts))
 
                 def embed_query(self, text: str) -> list[float]:
                     """嵌入查询"""
-                    import asyncio
                     return asyncio.run(self._provider.embed(text))
 
             embeddings = EmbeddingsAdapter(self._embedding_provider)
@@ -52,8 +51,8 @@ class LangChainRAG:
 
     async def index_document(self, file_path: str, doc_type: str = "general") -> dict:
         """索引文档"""
-        # 1. 加载文档
-        document = load_document(file_path)
+        # 1. 加载文档（文件 I/O + OCR 是阻塞操作）
+        document = await asyncio.to_thread(load_document, file_path)
 
         # 2. 分块
         chunks = chunk_text(document.text)
@@ -75,9 +74,9 @@ class LangChainRAG:
             )
             lc_docs.append(doc)
 
-        # 4. 添加到向量存储
+        # 4. 添加到向量存储（ChromaDB 写入是阻塞操作）
         vectorstore = self._get_vectorstore()
-        vectorstore.add_documents(lc_docs)
+        await asyncio.to_thread(vectorstore.add_documents, lc_docs)
 
         return {
             "doc_id": document.doc_id,
@@ -100,8 +99,9 @@ class LangChainRAG:
         if doc_type and doc_type != "all":
             filter_dict["doc_type"] = doc_type
 
-        # 执行检索
-        results = vectorstore.similarity_search_with_score(
+        # 执行检索（ChromaDB 查询是阻塞操作）
+        results = await asyncio.to_thread(
+            vectorstore.similarity_search_with_score,
             query=query,
             k=top_k,
             filter=filter_dict if filter_dict else None,
@@ -118,18 +118,18 @@ class LangChainRAG:
 
         return formatted_results
 
-    def delete_document(self, doc_id: str) -> None:
+    async def delete_document(self, doc_id: str) -> None:
         """删除文档"""
         vectorstore = self._get_vectorstore()
-        # 删除指定 doc_id 的所有文档
-        vectorstore.delete(where={"doc_id": doc_id})
+        await asyncio.to_thread(vectorstore.delete, where={"doc_id": doc_id})
 
-    def list_documents(self, doc_type: Optional[str] = None) -> list[dict]:
+    async def list_documents(self, doc_type: Optional[str] = None) -> list[dict]:
         """列出所有文档"""
         vectorstore = self._get_vectorstore()
 
         # 获取所有文档
-        results = vectorstore.get(
+        results = await asyncio.to_thread(
+            vectorstore.get,
             include=["metadatas"],
             where={"doc_type": doc_type} if doc_type else None,
         )

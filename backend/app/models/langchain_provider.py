@@ -110,9 +110,15 @@ class LangChainProvider(LLMProvider):
 
     async def chat_stream(self, messages: list[dict], system: str = "", **kwargs) -> AsyncGenerator[str, None]:
         lc_messages = self._convert_messages(messages, system)
-        async for chunk in self._model.astream(lc_messages):
-            if chunk.content:
-                yield chunk.content
+        try:
+            async for chunk in self._model.astream(lc_messages):
+                if chunk.content:
+                    yield chunk.content
+        except Exception:
+            # streaming 失败，降级为 blocking 调用
+            response = await self._model.ainvoke(lc_messages)
+            if response.content:
+                yield response.content
 
     async def chat_with_tools(
         self,

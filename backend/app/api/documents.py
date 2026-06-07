@@ -57,7 +57,7 @@ async def upload_document(
 @router.get("/documents", response_model=DocumentList)
 async def list_documents(doc_type: Optional[str] = None):
     """列出所有已上传的文档，可按 doc_type 过滤"""
-    docs = list_all_documents(doc_type=doc_type)
+    docs = await list_all_documents(doc_type=doc_type)
     items = [DocumentInfo(**d) for d in docs]
     return DocumentList(documents=items, total=len(items))
 

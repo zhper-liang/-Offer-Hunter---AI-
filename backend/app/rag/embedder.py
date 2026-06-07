@@ -1,5 +1,6 @@
 """嵌入 + 索引管线"""
 
+import asyncio
 import uuid
 from datetime import datetime
 from typing import Optional
@@ -19,8 +20,8 @@ async def index_document(
     完整索引管线: 解析 → 分块 → 嵌入 → 存储
     返回: {"doc_id": str, "chunk_count": int, "filename": str}
     """
-    # 1. 解析文档
-    doc: Document = load_document(file_path)
+    # 1. 解析文档（文件 I/O + OCR 是阻塞操作，放到线程池）
+    doc: Document = await asyncio.to_thread(load_document, file_path)
 
     # 2. 分块
     chunks: list[Chunk] = chunk_text(doc.text)
@@ -47,8 +48,8 @@ async def index_document(
         for c in chunks
     ]
 
-    # 5. 存入 ChromaDB
-    upsert_documents(doc_id, chunk_texts, embeddings, metadatas)
+    # 5. 存入 ChromaDB（已通过 asyncio.to_thread 包装）
+    await upsert_documents(doc_id, chunk_texts, embeddings, metadatas)
 
     return {
         "doc_id": doc_id,
@@ -60,4 +61,4 @@ async def index_document(
 
 async def remove_document(doc_id: str) -> None:
     """从索引中删除文档"""
-    delete_document(doc_id)
+    await delete_document(doc_id)

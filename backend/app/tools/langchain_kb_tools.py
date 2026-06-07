@@ -18,7 +18,7 @@ _compressor = ContextCompressor(max_tokens=6000)
 
 
 @tool
-def search_knowledge_base(query: str, doc_type: str = "all", top_k: int = 5) -> dict:
+async def search_knowledge_base(query: str, doc_type: str = "all", top_k: int = 5) -> dict:
     """搜索个人知识库，获取相关的工作经历、项目描述、技能、教育背景等信息。
 
     Args:
@@ -33,8 +33,7 @@ def search_knowledge_base(query: str, doc_type: str = "all", top_k: int = 5) -> 
     dt = None if doc_type == "all" else doc_type
 
     # 3. 检索
-    import asyncio
-    results = asyncio.run(retrieve(query, top_k=top_k, doc_type=dt))
+    results = await retrieve(query, top_k=top_k, doc_type=dt)
 
     if not results:
         return {
@@ -73,25 +72,25 @@ def search_knowledge_base(query: str, doc_type: str = "all", top_k: int = 5) -> 
 
 
 @tool
-def list_documents() -> Any:
+async def list_documents() -> Any:
     """列出知识库中所有已上传的文档。"""
-    docs = list_all_documents()
+    docs = await list_all_documents()
     if not docs:
         return "知识库为空，请先上传文档。"
     return docs
 
 
 @tool
-def delete_document(doc_id: str) -> str:
+async def remove_document(doc_id: str) -> str:
     """从知识库中删除指定文档。
 
     Args:
         doc_id: 要删除的文档 ID
     """
-    delete_document(doc_id)
+    await delete_document(doc_id)
     return f"已删除文档: {doc_id}"
 
 
 def get_langchain_kb_tools() -> list:
     """获取 LangChain 版本的知识库工具列表"""
-    return [search_knowledge_base, list_documents, delete_document]
+    return [search_knowledge_base, list_documents, remove_document]

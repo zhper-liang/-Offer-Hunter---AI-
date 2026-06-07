@@ -98,7 +98,7 @@ class ListDocumentsTool(BaseTool):
         return {"type": "object", "properties": {}}
 
     async def execute(self) -> Any:
-        docs = list_all_documents()
+        docs = await list_all_documents()
         if not docs:
             return "知识库为空，请先上传文档。"
         return docs
@@ -124,5 +124,5 @@ class DeleteDocumentTool(BaseTool):
         }
 
     async def execute(self, doc_id: str) -> str:
-        delete_document(doc_id)
+        await delete_document(doc_id)
         return f"已删除文档: {doc_id}"
